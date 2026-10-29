@@ -14,6 +14,7 @@ class Character {
     this.armorClass = armorClass;
     this.attackBonus = attackBonus;
     this.damageDice = damageDice;
+    this.isDefending = false; // 🆕 Додано стан захисту
   }
 
   get hp() {
@@ -24,7 +25,20 @@ class Character {
     return this.#hp > 0;
   }
 
+  // 🆕 Новий метод для захисту
+  defend() {
+    this.isDefending = true;
+    console.log(`\n🛡️ ${this.name} стає в захисну стійку! Наступний отриманий урон буде зменшено вдвічі.`);
+  }
+
   takeDamage(amount) {
+    // 🆕 Якщо персонаж у стані захисту, зменшуємо урон
+    if (this.isDefending) {
+      amount = Math.floor(amount / 2);
+      console.log(`🛡️ ${this.name} успішно блокує частину удару!`);
+      this.isDefending = false; // Захист спрацьовує лише на один удар
+    }
+
     this.#hp = Math.max(0, this.#hp - amount);
 
     console.log(
@@ -144,7 +158,6 @@ class Rogue extends Hero {
 
 class Archer extends Hero {
   constructor(name) {
-    // 28 HP, 14 Броня, +8 атака (дуже влучний), 1d8 урон, 2 зілля, 2 спец. здібності
     super(name, 28, 14, 8, 8, 2, 2);
     this.className = "Лучник";
   }
@@ -159,9 +172,8 @@ class Archer extends Hero {
     console.log(`\n🏹 ${this.name} використовує [ШКВАЛ СТРІЛ]! Випускає 3 стріли підряд.`);
     
     let totalDamage = 0;
-    // Стріляємо 3 рази
     for (let i = 1; i <= 3; i++) {
-      const arrowDamage = Dice.roll(6); // Кожна стріла наносить від 1 до 6 урону
+      const arrowDamage = Dice.roll(6); 
       totalDamage += arrowDamage;
       console.log(`   🏹 Стріла ${i} влучає і наносить ${arrowDamage} урону.`);
     }
@@ -186,30 +198,24 @@ class Arena {
     while (this.player1.isAlive() && this.player2.isAlive()) {
       console.log(`\n--- РАУНД ${this.round} ---`);
       
-      // Фіксуємо HP на початку раунду
       const p1HpBefore = this.player1.hp;
       const p2HpBefore = this.player2.hp;
       
-      // Хід першого гравця
       this.executeTurn(this.player1, this.player2);
       
-      // Хід другого гравця (якщо він вижив після атаки першого)
       if (this.player2.isAlive()) {
         this.executeTurn(this.player2, this.player1);
       }
       
-      // Вираховуємо різницю HP після завершення обох ходів
       const p1Diff = this.player1.hp - p1HpBefore;
       const p2Diff = this.player2.hp - p2HpBefore;
 
-      // Функція для форматування тексту (втрата чи лікування)
       const formatStatus = (diff) => {
         if (diff < 0) return `втратив ${Math.abs(diff)} HP 🩸`;
         if (diff > 0) return `відновив ${diff} HP 💚`;
         return `без змін 🛡️`;
       };
 
-      // Виводимо підсумок у вікно alert (інпут, що чекає натискання ОК)
       alert(
         `--- ПІДСУМОК РАУНДУ ${this.round} ---\n\n` +
         `🔹 ${this.player1.name} ${formatStatus(p1Diff)} \n(Залишилось HP: ${this.player1.hp}/${this.player1.maxHp})\n\n` +
@@ -217,7 +223,6 @@ class Arena {
         `Натисніть OK, щоб продовжити.`
       );
 
-      // Якщо хтось помер під час раунду — перериваємо цикл
       if (!this.player1.isAlive() || !this.player2.isAlive()) break;
       
       this.round++;
@@ -227,6 +232,8 @@ class Arena {
   }
 
   executeTurn(attacker, defender) {
+    // 🆕 Скидаємо захист на початку свого ходу, щоб він не висів "вічно"
+    attacker.isDefending = false; 
     let actionCompleted = false;
     
     while (!actionCompleted) {
@@ -237,7 +244,8 @@ class Arena {
         `Оберіть дію:\n` +
         `1 - ⚔️ Звичайна атака\n` +
         `2 - 🧪 Зілля здоров'я\n` +
-        `3 - ✨ Спец. здібність`
+        `3 - ✨ Спец. здібність\n` +
+        `4 - 🛡️ Захист (зменшує наступний урон вдвічі)` // 🆕 Додано 4 пункт
       );
 
       if (choice === "1") {
@@ -247,8 +255,12 @@ class Arena {
         actionCompleted = attacker.heal();
       } else if (choice === "3") {
         actionCompleted = attacker.useSpecialAbility(defender);
+      } else if (choice === "4") {
+        // 🆕 Виклик нової дії
+        attacker.defend();
+        actionCompleted = true;
       } else {
-        console.log("\n❌ Невірний вибір! Введіть 1, 2 або 3.");
+        console.log("\n❌ Невірний вибір! Введіть 1, 2, 3 або 4.");
       }
     }
   }
@@ -265,8 +277,8 @@ class Arena {
     console.log(`=========================================`);
   }
 }
-// --- ФУНКЦІЇ ДЛЯ ЗАПУСКУ ГРИ ---
 
+// --- ФУНКЦІЇ ДЛЯ ЗАПУСКУ ГРИ ---
 function createPlayer(playerNumber) {
   let rawName = prompt(`Гравець ${playerNumber}, введіть ім'я вашого героя:`);
   let name = (rawName && rawName.trim() !== "") ? rawName.trim() : `Герой ${playerNumber}`;
