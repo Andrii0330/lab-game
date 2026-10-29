@@ -183,7 +183,100 @@ class Archer extends Hero {
   }
 }
 
+class Arena {
+  constructor(player1, player2) {
+    this.player1 = player1;
+    this.player2 = player2;
+    this.round = 1;
+  }
 
+  startBattle() {
+    console.log(`\n=========================================`);
+    console.log(`🔥 БІЙ ПОЧИНАЄТЬСЯ: ${this.player1.name} VS ${this.player2.name} 🔥`);
+    console.log(`=========================================`);
+
+    while (this.player1.isAlive() && this.player2.isAlive()) {
+      console.log(`\n--- РАУНД ${this.round} ---`);
+      
+      const p1HpBefore = this.player1.hp;
+      const p2HpBefore = this.player2.hp;
+      
+      this.executeTurn(this.player1, this.player2);
+      
+      if (this.player2.isAlive()) {
+        this.executeTurn(this.player2, this.player1);
+      }
+      
+      const p1Diff = this.player1.hp - p1HpBefore;
+      const p2Diff = this.player2.hp - p2HpBefore;
+
+      const formatStatus = (diff) => {
+        if (diff < 0) return `втратив ${Math.abs(diff)} HP 🩸`;
+        if (diff > 0) return `відновив ${diff} HP 💚`;
+        return `без змін 🛡️`;
+      };
+
+      alert(
+        `--- ПІДСУМОК РАУНДУ ${this.round} ---\n\n` +
+        `🔹 ${this.player1.name} ${formatStatus(p1Diff)} \n(Залишилось HP: ${this.player1.hp}/${this.player1.maxHp})\n\n` +
+        `🔸 ${this.player2.name} ${formatStatus(p2Diff)} \n(Залишилось HP: ${this.player2.hp}/${this.player2.maxHp})\n\n` +
+        `Натисніть OK, щоб продовжити.`
+      );
+
+      if (!this.player1.isAlive() || !this.player2.isAlive()) break;
+      
+      this.round++;
+    }
+
+    this.announceWinner();
+  }
+
+  executeTurn(attacker, defender) {
+    // 🆕 Скидаємо захист на початку свого ходу, щоб він не висів "вічно"
+    attacker.isDefending = false; 
+    let actionCompleted = false;
+    
+    while (!actionCompleted) {
+      const choice = prompt(
+        `--- ХІД: ${attacker.name} (${attacker.className}) ---\n` +
+        `Ваше HP: ${attacker.hp}/${attacker.maxHp} | Зілля: ${attacker.healthPotions} | Спец: ${attacker.specialUses}\n` +
+        `Ворог (${defender.name}) HP: ${defender.hp}/${defender.maxHp}\n\n` +
+        `Оберіть дію:\n` +
+        `1 - ⚔️ Звичайна атака\n` +
+        `2 - 🧪 Зілля здоров'я\n` +
+        `3 - ✨ Спец. здібність\n` +
+        `4 - 🛡️ Захист (зменшує наступний урон вдвічі)` // 🆕 Додано 4 пункт
+      );
+
+      if (choice === "1") {
+        attacker.attack(defender);
+        actionCompleted = true;
+      } else if (choice === "2") {
+        actionCompleted = attacker.heal();
+      } else if (choice === "3") {
+        actionCompleted = attacker.useSpecialAbility(defender);
+      } else if (choice === "4") {
+        // 🆕 Виклик нової дії
+        attacker.defend();
+        actionCompleted = true;
+      } else {
+        console.log("\n❌ Невірний вибір! Введіть 1, 2, 3 або 4.");
+      }
+    }
+  }
+
+  announceWinner() {
+    console.log(`\n=========================================`);
+    if (this.player1.isAlive()) {
+      console.log(`🏆 ПЕРЕМОГА! ${this.player1.name} перемагає у битві з ${this.player1.hp} HP!`);
+      alert(`🏆 ПЕРЕМОГА!\n\n${this.player1.name} перемагає у битві з ${this.player1.hp} HP!`);
+    } else {
+      console.log(`🏆 ПЕРЕМОГА! ${this.player2.name} перемагає у битві з ${this.player2.hp} HP!`);
+      alert(`🏆 ПЕРЕМОГА!\n\n${this.player2.name} перемагає у битві з ${this.player2.hp} HP!`);
+    }
+    console.log(`=========================================`);
+  }
+}
 
 // --- ФУНКЦІЇ ДЛЯ ЗАПУСКУ ГРИ ---
 function createPlayer(playerNumber) {
