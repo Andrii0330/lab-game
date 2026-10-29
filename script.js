@@ -5,38 +5,51 @@ class Dice {
 }
 
 class Character {
+  #hp;
+
   constructor(name, hp, armorClass, attackBonus, damageDice) {
     this.name = name;
     this.maxHp = hp;
-    this.hp = hp;
-    this.armorClass = armorClass; 
-    this.attackBonus = attackBonus; 
-    this.damageDice = damageDice; 
+    this.#hp = hp;
+    this.armorClass = armorClass;
+    this.attackBonus = attackBonus;
+    this.damageDice = damageDice;
+  }
+
+  get hp() {
+    return this.#hp;
   }
 
   isAlive() {
-    return this.hp > 0;
+    return this.#hp > 0;
   }
 
   takeDamage(amount) {
-    this.hp -= amount;
-    if (this.hp < 0) this.hp = 0;
-    console.log(`💥 ${this.name} отримує ${amount} урону! (Залишилось HP: ${this.hp}/${this.maxHp})`);
+    this.#hp = Math.max(0, this.#hp - amount);
+
+    console.log(
+      `💥 ${this.name} отримує ${amount} урону! ` +
+      `(Залишилось HP: ${this.#hp}/${this.maxHp})`
+    );
+  }
+
+  restoreHealth(amount) {
+    this.#hp = Math.min(this.maxHp, this.#hp + amount);
   }
 
   attack(target) {
     console.log(`\n⚔️ ${this.name} атакує ${target.name}...`);
-    
+
     const d20 = Dice.roll(20);
     const attackRoll = d20 + this.attackBonus;
-    
+
     console.log(`🎲 Кидок: ${d20} + ${this.attackBonus} = ${attackRoll} (Броня: ${target.armorClass})`);
 
     if (d20 === 1) {
       console.log(`❌ Критичний промах! ${this.name} епічно схибив.`);
     } else if (d20 === 20 || attackRoll >= target.armorClass) {
       let damage = Dice.roll(this.damageDice);
-      
+
       if (d20 === 20) {
         console.log(`🎯 КРИТИЧНЕ ПОПАДАННЯ! Урон подвоєно.`);
         damage *= 2;
@@ -60,7 +73,7 @@ class Hero extends Character {
   heal() {
     if (this.healthPotions > 0) {
       const healAmount = Dice.roll(8) + 5; 
-      this.hp = Math.min(this.maxHp, this.hp + healAmount);
+      this.restoreHealth(healAmount);
       this.healthPotions--;
       console.log(`\n🧪 ${this.name} п'є зілля і відновлює ${healAmount} HP! (HP: ${this.hp}/${this.maxHp}. Залишилось: ${this.healthPotions})`);
       return true;
